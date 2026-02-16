@@ -15,7 +15,7 @@ Chrome DevTools for reliable automation, in-depth debugging, and performance ana
   DevTools](https://github.com/ChromeDevTools/devtools-frontend) to record
   traces and extract actionable performance insights.
 - **Advanced browser debugging**: Analyze network requests, take screenshots and
-  check the browser console.
+  check browser console messages (with source-mapped stack traces).
 - **Reliable automation**. Uses
   [puppeteer](https://github.com/puppeteer/puppeteer) to automate actions in
   Chrome and automatically wait for action results.
@@ -26,6 +26,12 @@ Chrome DevTools for reliable automation, in-depth debugging, and performance ana
 allowing them to inspect, debug, and modify any data in the browser or DevTools.
 Avoid sharing sensitive or personal information that you don't want to share with
 MCP clients.
+
+Performance tools may send trace URLs to the Google CrUX API to fetch real-user
+experience data. This helps provide a holistic performance picture by
+presenting field data alongside lab data. This data is collected by the [Chrome
+User Experience Report (CrUX)](https://developer.chrome.com/docs/crux). To disable
+this, run with the `--no-performance-crux` flag.
 
 ## **Usage statistics**
 
@@ -136,11 +142,30 @@ Chrome DevTools MCP will not start the browser instance automatically using this
 
 <details>
   <summary>Claude Code</summary>
-    Use the Claude Code CLI to add the Chrome DevTools MCP server (<a href="https://code.claude.com/docs/en/mcp">guide</a>):
+
+**Install via CLI (MCP only)**
+
+Use the Claude Code CLI to add the Chrome DevTools MCP server (<a href="https://code.claude.com/docs/en/mcp">guide</a>):
 
 ```bash
 claude mcp add chrome-devtools --scope user npx chrome-devtools-mcp@latest
 ```
+
+**Install as a Plugin (MCP + Skills)**
+
+To install Chrome DevTools MCP with skills, add the marketplace registry in Claude Code:
+
+```sh
+/plugin marketplace add ChromeDevTools/chrome-devtools-mcp
+```
+
+Then, install the plugin:
+
+```sh
+/plugin install chrome-devtools-mcp
+```
+
+Restart Claude Code to have the MCP server and skills load (check with `/skills`).
 
 </details>
 
@@ -286,6 +311,30 @@ The same way chrome-devtools-mcp can be configured for JetBrains Junie in `Setti
 In **Kiro Settings**, go to `Configure MCP` > `Open Workspace or User MCP Config` > Use the configuration snippet provided above.
 
 Or, from the IDE **Activity Bar** > `Kiro` > `MCP Servers` > `Click Open MCP Config`. Use the configuration snippet provided above.
+
+</details>
+
+<details>
+  <summary>Katalon Studio</summary>
+
+The Chrome DevTools MCP server can be used with <a href="https://docs.katalon.com/katalon-studio/studioassist/mcp-servers/setting-up-chrome-devtools-mcp-server-for-studioassist">Katalon StudioAssist</a> via an MCP proxy.
+
+**Step 1:** Install the MCP proxy by following the <a href="https://docs.katalon.com/katalon-studio/studioassist/mcp-servers/setting-up-mcp-proxy-for-stdio-mcp-servers">MCP proxy setup guide</a>.
+
+**Step 2:** Start the Chrome DevTools MCP server with the proxy:
+
+```bash
+mcp-proxy --transport streamablehttp --port 8080 -- npx -y chrome-devtools-mcp@latest
+```
+
+**Note:** You may need to pick another port if 8080 is already in use.
+
+**Step 3:** In Katalon Studio, add the server to StudioAssist with the following settings:
+
+- **Connection URL:** `http://127.0.0.1:8080/mcp`
+- **Transport type:** `HTTP`
+
+Once connected, the Chrome DevTools MCP tools will be available in StudioAssist.
 
 </details>
 
@@ -495,6 +544,11 @@ The Chrome DevTools MCP server supports the following configuration option:
   - **Type:** boolean
   - **Default:** `true`
 
+- **`--performanceCrux`/ `--performance-crux`**
+  Set to false to disable sending URLs from performance traces to CrUX API to get field performance data.
+  - **Type:** boolean
+  - **Default:** `true`
+
 - **`--usageStatistics`/ `--usage-statistics`**
   Set to false to opt-out of usage statistics collection. Google collects usage data to improve the tool, handled under the Google Privacy Policy (https://policies.google.com/privacy). This is independent from Chrome browser metrics. Disabled if CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS or CI env variables are set.
   - **Type:** boolean
@@ -592,14 +646,11 @@ The following code snippet is an example configuration for gemini-cli:
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
-      "args": ["chrome-devtools-mcp@latest", "--autoConnect", "--channel=beta"]
+      "args": ["chrome-devtools-mcp@latest", "--autoConnect"]
     }
   }
 }
 ```
-
-Note: you have to specify `--channel=beta` until Chrome M144 has reached the
-stable channel.
 
 **Step 3:** Test your setup
 
@@ -690,11 +741,4 @@ Please consult [these instructions](./docs/debugging-android.md).
 
 ## Known limitations
 
-### Operating system sandboxes
-
-Some MCP clients allow sandboxing the MCP server using macOS Seatbelt or Linux
-containers. If sandboxes are enabled, `chrome-devtools-mcp` is not able to start
-Chrome that requires permissions to create its own sandboxes. As a workaround,
-either disable sandboxing for `chrome-devtools-mcp` in your MCP client or use
-`--browser-url` to connect to a Chrome instance that you start manually outside
-of the MCP client sandbox.
+See [Troubleshooting](./docs/troubleshooting.md).

@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.17.0](https://github.com/ChromeDevTools/chrome-devtools-mcp/compare/chrome-devtools-mcp-v0.16.0...chrome-devtools-mcp-v0.17.0) (2026-02-10)
+
+
+### 🎉 Features
+
+* include Error.cause chain for uncaught errors and logged Errors ([#906](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/906)) ([05b01ec](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/05b01ecaba47cf1ce38564636663222c9cab46de))
+* Integrate CrUX data into performance trace summaries ([#733](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/733)) ([b747f9d](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/b747f9d74a12d2119b6531476b2f88ab66be0ff8))
+* show message and stack trace in details when console.log'ging Error objects ([#902](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/902)) ([ffa00da](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/ffa00dab1b65b2eac8db215e0289317b8ed9b725))
+
+
+### 🛠️ Fixes
+
+* console formatter hides frames from ignored scripts ([#927](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/927)) ([8e2380b](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/8e2380b434d9659ffa8a7043d2589261772fa04f))
+* limit stack traces to 50 lines ([#923](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/923)) ([caea23a](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/caea23a7cf33c87cd4ce426eb2a10724aba3cc71))
+
+
+### 📄 Documentation
+
+* add macOS Web Bluetooth troubleshooting note ([#930](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/930)) ([3c9528b](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/3c9528b43d9bbff166fcfcfee321149ff44ddd21)), closes [#917](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/917)
+
+## [0.16.0](https://github.com/ChromeDevTools/chrome-devtools-mcp/compare/chrome-devtools-mcp-v0.15.1...chrome-devtools-mcp-v0.16.0) (2026-02-04)
+
+
+### 🎉 Features
+
+* include source-mapped stack trace for uncaught errors ([#876](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/876)) ([ecef712](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/ecef712e70b47ae81eb3364d0aed801ec1c91a70))
+
+
+### 🛠️ Fixes
+
+* accidental extra typing in the fill tool ([#886](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/886)) ([3d6e59d](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/3d6e59dda42be3c6fd97446344a28cbbaa5809b3))
+* update evaluateScript description formatting ([#880](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/880)) ([24db9dd](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/24db9dd78cd4f054d291322685b4f47601da3f5a))
+* use 1-based line/column and fix wasm offsets in stack frames ([#884](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/884)) ([7e1ec81](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/7e1ec81fb63ec8b7c6d77dbdc88beef4240243ba))
+
+
+### 📄 Documentation
+
+* mention source-mapped stack traces in 'Key features' ([#883](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/883)) ([579d18a](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/579d18a3f4d1d8d05bf267a39de7f2f53e719b17))
+* remove outdated --channel=beta note ([#882](https://github.com/ChromeDevTools/chrome-devtools-mcp/issues/882)) ([acdb5c9](https://github.com/ChromeDevTools/chrome-devtools-mcp/commit/acdb5c9bb3f249c5a9ce1d4a3e84c580af999141))
+
 ## [0.15.1](https://github.com/ChromeDevTools/chrome-devtools-mcp/compare/chrome-devtools-mcp-v0.15.0...chrome-devtools-mcp-v0.15.1) (2026-01-30)
 
 
