@@ -7,7 +7,7 @@
 // Note: can be converted to ts file once node 20 support is dropped.
 // Node 20 does not support --experimental-strip-types flag.
 
-import {spawn} from 'node:child_process';
+import {spawn, execSync} from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -50,13 +50,27 @@ const nodeArgs = [
   './build/tests/setup.js',
   '--no-warnings=ExperimentalWarning',
   '--test-reporter',
-  'spec',
+  (process.env['NODE_TEST_REPORTER'] ?? process.env['CI']) ? 'spec' : 'dot',
   '--test-force-exit',
+  '--test-concurrency=1',
   '--test',
   '--test-timeout=60000',
   ...flags,
   ...files,
 ];
+
+function installChrome(version) {
+  try {
+    return execSync(
+      `npx puppeteer browsers install chrome@${version} --format "{{path}}"`,
+    )
+      .toString()
+      .trim();
+  } catch (e) {
+    console.error(`Failed to install Chrome ${version}:`, e);
+    process.exit(1);
+  }
+}
 
 async function runTests(attempt) {
   if (attempt > 1) {
@@ -68,6 +82,7 @@ async function runTests(attempt) {
       env: {
         ...process.env,
         CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS: true,
+        CHROME_DEVTOOLS_MCP_CRASH_ON_UNCAUGHT: true,
       },
     });
 
@@ -76,6 +91,9 @@ async function runTests(attempt) {
     });
   });
 }
+
+const chromePath = installChrome('146.0.7680.31');
+process.env.CHROME_M146_EXECUTABLE_PATH = chromePath;
 
 const maxAttempts = shouldRetry ? 3 : 1;
 let exitCode = 1;
