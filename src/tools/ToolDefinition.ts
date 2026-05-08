@@ -5,14 +5,17 @@
  */
 
 import type {ParsedArguments} from '../bin/chrome-devtools-mcp-cli-options.js';
+import type {AggregatedInfoWithUid} from '../HeapSnapshotManager.js';
 import type {McpPage} from '../McpPage.js';
 import {zod} from '../third_party/index.js';
 import type {
   Dialog,
   ElementHandle,
+  Extension,
   Page,
   ScreenRecorder,
   Viewport,
+  DevTools,
 } from '../third_party/index.js';
 import type {InsightName, TraceResult} from '../trace-processing/parse.js';
 import type {
@@ -20,14 +23,13 @@ import type {
   GeolocationOptions,
   ExtensionServiceWorker,
 } from '../types.js';
-import type {InstalledExtension} from '../utils/ExtensionRegistry.js';
 import type {PaginationOptions} from '../utils/types.js';
 
 import type {ToolCategory} from './categories.js';
 import type {
   ToolGroup,
-  ToolDefinition as InPageToolDefinition,
-} from './inPage.js';
+  ToolDefinition as ThirdPartyDeveloperToolDefinition,
+} from './thirdPartyDeveloper.js';
 
 export interface BaseToolDefinition<
   Schema extends zod.ZodRawShape = zod.ZodRawShape,
@@ -44,6 +46,7 @@ export interface BaseToolDefinition<
     conditions?: string[];
   };
   schema: Schema;
+  blockedByDialog: boolean;
 }
 
 export interface ToolDefinition<
@@ -99,6 +102,21 @@ export interface DevToolsData {
 
 export interface Response {
   appendResponseLine(value: string): void;
+  setHeapSnapshotAggregates(
+    aggregates: Record<
+      string,
+      DevTools.HeapSnapshotModel.HeapSnapshotModel.AggregatedInfo
+    >,
+    options?: PaginationOptions,
+  ): void;
+  setHeapSnapshotStats(
+    stats: DevTools.HeapSnapshotModel.HeapSnapshotModel.Statistics,
+    staticData: DevTools.HeapSnapshotModel.HeapSnapshotModel.StaticData | null,
+  ): void;
+  setHeapSnapshotNodes(
+    nodes: DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange,
+    options?: PaginationOptions,
+  ): void;
   setIncludePages(value: boolean): void;
   setIncludeNetworkRequests(
     value: boolean,
@@ -118,7 +136,7 @@ export interface Response {
   includeSnapshot(params?: SnapshotParams): void;
   attachImage(value: ImageContentData): void;
   attachNetworkRequest(
-    reqid: number,
+    reqId: number,
     options?: {requestFilePath?: string; responseFilePath?: string},
   ): void;
   attachConsoleMessage(msgid: number): void;
@@ -133,13 +151,27 @@ export interface Response {
   ): void;
   setListExtensions(): void;
   attachLighthouseResult(result: LighthouseData): void;
-  setListInPageTools(): void;
+  setListThirdPartyDeveloperTools(): void;
+  setListWebMcpTools(): void;
 }
 
+export type SupportedExtensions =
+  | '.png'
+  | '.jpeg'
+  | '.webp'
+  | '.json'
+  | '.network-response'
+  | '.network-request'
+  | '.html'
+  | '.txt'
+  | '.csv'
+  | '.json.gz';
+
 /**
- * Only add methods required by tools/*.
+ * Only add methods used by tools/*.
  */
 export type Context = Readonly<{
+  validatePath(filePath?: string): void;
   isRunningPerformanceTrace(): boolean;
   setIsRunningPerformanceTrace(x: boolean): void;
   isCruxEnabled(): boolean;
@@ -170,18 +202,14 @@ export type Context = Readonly<{
   ): Promise<{filepath: string}>;
   saveFile(
     data: Uint8Array<ArrayBufferLike>,
-    filename: string,
+    clientProvidedFilePath: string,
+    extension: SupportedExtensions,
   ): Promise<{filename: string}>;
-  waitForEventsAfterAction(
-    action: () => Promise<unknown>,
-    options?: {timeout?: number},
-  ): Promise<void>;
   waitForTextOnPage(
     text: string[],
     timeout?: number,
     page?: Page,
   ): Promise<Element>;
-  getDevToolsData(page: ContextPage): Promise<DevToolsData>;
   /**
    * Returns a reqid for a cdpRequestId.
    */
@@ -196,16 +224,31 @@ export type Context = Readonly<{
   installExtension(path: string): Promise<string>;
   uninstallExtension(id: string): Promise<void>;
   triggerExtensionAction(id: string): Promise<void>;
-  listExtensions(): InstalledExtension[];
-  getExtension(id: string): InstalledExtension | undefined;
-  getInPageTools(): ToolGroup<InPageToolDefinition> | undefined;
+  listExtensions(): Promise<Map<string, Extension>>;
+  getExtension(id: string): Promise<Extension | undefined>;
   getSelectedMcpPage(): McpPage;
   getExtensionServiceWorkers(): ExtensionServiceWorker[];
   getExtensionServiceWorkerId(
     extensionServiceWorker: ExtensionServiceWorker,
   ): string | undefined;
+  getHeapSnapshotAggregates(
+    filePath: string,
+  ): Promise<Record<string, AggregatedInfoWithUid>>;
+  getHeapSnapshotStats(
+    filePath: string,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.Statistics>;
+  getHeapSnapshotStaticData(
+    filePath: string,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.StaticData | null>;
+  getHeapSnapshotNodesByUid(
+    filePath: string,
+    uid: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange>;
 }>;
 
+/**
+ * Only add methods used by tools/*.
+ */
 export type ContextPage = Readonly<{
   readonly pptrPage: Page;
   getAXNodeByUid(uid: string): TextSnapshotNode | undefined;
@@ -213,6 +256,20 @@ export type ContextPage = Readonly<{
 
   getDialog(): Dialog | undefined;
   clearDialog(): void;
+  throwIfDialogOpen(): void;
+  waitForEventsAfterAction(
+    action: () => Promise<unknown>,
+    options?: {timeout?: number; handleDialog?: 'accept' | 'dismiss' | string},
+  ): Promise<void>;
+  getThirdPartyDeveloperTools():
+    | ToolGroup<ThirdPartyDeveloperToolDefinition>
+    | undefined;
+  executeThirdPartyDeveloperTool(
+    toolName: string,
+    params: Record<string, unknown>,
+    response: Response,
+  ): Promise<void>;
+  getDevToolsData(): Promise<DevToolsData>;
 }>;
 
 export function defineTool<Schema extends zod.ZodRawShape>(

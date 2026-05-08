@@ -46,6 +46,8 @@ describe('ClearcutLogger', () => {
       });
       await logger.logToolInvocation({
         toolName: 'test_tool',
+        params: {},
+        schema: {},
         success: true,
         latencyMs: 123,
       });
@@ -56,6 +58,40 @@ describe('ClearcutLogger', () => {
       assert.strictEqual(msg.payload.tool_invocation?.tool_name, 'test_tool');
       assert.strictEqual(msg.payload.tool_invocation?.success, true);
       assert.strictEqual(msg.payload.tool_invocation?.latency_ms, 123);
+    });
+    it('sends sanitized params', async () => {
+      const logger = new ClearcutLogger({
+        persistence: mockPersistence,
+        appVersion: '1.0.0',
+        watchdogClient: mockWatchdogClient,
+      });
+
+      const schema = {
+        uid: zod.string(),
+        myString: zod.string(),
+      };
+
+      const params = {
+        uid: 'sensitive',
+        myString: 'hello',
+      };
+
+      await logger.logToolInvocation({
+        toolName: 'test_tool',
+        params,
+        schema,
+        success: true,
+        latencyMs: 123,
+      });
+
+      assert(mockWatchdogClient.send.calledOnce);
+      const msg = mockWatchdogClient.send.firstCall.args[0];
+      assert.strictEqual(msg.type, WatchdogMessageType.LOG_EVENT);
+      assert.deepStrictEqual(msg.payload.tool_invocation?.tool_params, {
+        test_tool_params: {
+          my_string_length: 5,
+        },
+      });
     });
   });
 
@@ -191,12 +227,41 @@ describe('ClearcutLogger', () => {
       const sanitized = sanitizeParams(params, schema);
 
       assert.deepStrictEqual(sanitized, {
-        myString_length: 5,
-        myArray_count: 2,
-        myNumber: 42,
-        myBool: true,
-        myEnum: 'a',
+        my_string_length: 5,
+        my_array_count: 2,
+        my_number: 42,
+        my_bool: true,
+        my_enum: 'a',
       });
+    });
+
+    it('bucketizes string lengths correctly', () => {
+      const schema = {
+        str0: zod.string(),
+        str1: zod.string(),
+        str3: zod.string(),
+        str5: zod.string(),
+        str10000: zod.string(),
+        str10001: zod.string(),
+      };
+
+      const params = {
+        str0: '',
+        str1: 'a',
+        str3: 'abc',
+        str5: 'abcde',
+        str10000: 'a'.repeat(10000),
+        str10001: 'a'.repeat(10001),
+      };
+
+      const sanitized = sanitizeParams(params, schema);
+
+      assert.strictEqual(sanitized.str0_length, 0);
+      assert.strictEqual(sanitized.str1_length, 1);
+      assert.strictEqual(sanitized.str3_length, 5); // snaps to 5
+      assert.strictEqual(sanitized.str5_length, 5);
+      assert.strictEqual(sanitized.str10000_length, 10000);
+      assert.strictEqual(sanitized.str10001_length, 10000); // snaps to 10000
     });
 
     it('throws error for unsupported types', () => {
