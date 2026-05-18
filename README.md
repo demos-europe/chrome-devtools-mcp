@@ -175,7 +175,7 @@ To install Chrome DevTools MCP with skills, add the marketplace registry in Clau
 Then, install the plugin:
 
 ```sh
-/plugin install chrome-devtools-mcp
+/plugin install chrome-devtools-mcp@chrome-devtools-plugins
 ```
 
 Restart Claude Code to have the MCP server and skills load (check with `/skills`).
