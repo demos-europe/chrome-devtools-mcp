@@ -116,6 +116,12 @@ export interface Response {
     nodes: DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange,
     options?: PaginationOptions,
   ): void;
+  setHeapSnapshotRetainingPaths(
+    retainingPaths: DevTools.HeapSnapshotModel.HeapSnapshotModel.RetainingPaths,
+  ): void;
+  setHeapSnapshotDominators(
+    dominators: DevTools.HeapSnapshotModel.HeapSnapshotModel.DominatorChain,
+  ): void;
   setIncludePages(value: boolean): void;
   setIncludeNetworkRequests(
     value: boolean,
@@ -250,6 +256,21 @@ export type Context = Readonly<{
     nodeId: number,
   ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange>;
   closeHeapSnapshot(filePath: string): Promise<boolean>;
+  getHeapSnapshotRetainingPaths(
+    filePath: string,
+    nodeId: number,
+    maxDepth?: number,
+    maxNodes?: number,
+    maxSiblings?: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.RetainingPaths>;
+  getHeapSnapshotDominators(
+    filePath: string,
+    nodeId: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.DominatorChain>;
+  getHeapSnapshotEdges(
+    filePath: string,
+    nodeId: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange>;
 }>;
 
 /**

@@ -10,8 +10,11 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
-import type {TargetUniverse} from './DevtoolsUtils.js';
-import {UniverseManager} from './DevtoolsUtils.js';
+import type {TargetUniverse} from './devtools/DevtoolsUtils.js';
+import {
+  overrideDevToolsGlobals,
+  UniverseManager,
+} from './devtools/DevtoolsUtils.js';
 import {HeapSnapshotManager} from './HeapSnapshotManager.js';
 import type {AggregatedInfoWithId} from './HeapSnapshotManager.js';
 import {McpPage} from './McpPage.js';
@@ -110,6 +113,12 @@ export class McpContext implements Context {
     options: McpContextOptions,
     locatorClass: typeof Locator,
   ) {
+    overrideDevToolsGlobals({
+      loadResource: (url: string) => {
+        return this.loadResource(url);
+      },
+    });
+
     this.browser = browser;
     this.logger = logger;
     this.#locatorClass = locatorClass;
@@ -918,5 +927,59 @@ export class McpContext implements Context {
 
   hasHeapSnapshots(): boolean {
     return this.#heapSnapshotManager.hasSnapshots();
+  }
+
+  async getHeapSnapshotRetainingPaths(
+    filePath: string,
+    nodeId: number,
+    maxDepth?: number,
+    maxNodes?: number,
+    maxSiblings?: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.RetainingPaths> {
+    return await this.#heapSnapshotManager.getRetainingPaths(
+      filePath,
+      nodeId,
+      maxDepth,
+      maxNodes,
+      maxSiblings,
+    );
+  }
+
+  async getHeapSnapshotDominators(
+    filePath: string,
+    nodeId: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.DominatorChain> {
+    return await this.#heapSnapshotManager.getDominatorsOf(filePath, nodeId);
+  }
+
+  async loadResource(path: string): Promise<string> {
+    const url = new URL(path);
+
+    switch (url.protocol) {
+      case 'https:':
+      case 'http:': {
+        // TODO: Verify allow/block list
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to load resource: ${url}`);
+        }
+        return response.text();
+      }
+
+      case 'file:': {
+        await this.validatePath(fileURLToPath(url));
+        return await fsPromises.readFile(url, 'utf-8');
+      }
+
+      default:
+        throw new Error(`Unsupported protocol for: ${url}`);
+    }
+  }
+
+  async getHeapSnapshotEdges(
+    filePath: string,
+    nodeId: number,
+  ): Promise<DevTools.HeapSnapshotModel.HeapSnapshotModel.ItemsRange> {
+    return await this.#heapSnapshotManager.getEdges(filePath, nodeId);
   }
 }
